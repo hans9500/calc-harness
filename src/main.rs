@@ -9,6 +9,7 @@
 //   1001 = 숫자 아님
 //   1002 = 지원하지 않는 연산자
 //   2001 = 0으로 나누기
+//   2002 = 곱셈 결과 오버플로우(무한대)
 
 use std::process::exit;
 
@@ -22,7 +23,10 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() != 4 {
-        die(1000, "사용법: calc <숫자> <연산자> <숫자>   (예: calc 10 / 2)");
+        die(
+            1000,
+            "사용법: calc <숫자> <연산자> <숫자>   (예: calc 10 / 2)",
+        );
     }
 
     let a: f64 = args[1]
@@ -36,14 +40,23 @@ fn main() {
     let result = match op.as_str() {
         "+" => a + b,
         "-" => a - b,
-        "*" => a * b,
+        "*" => {
+            let m = a * b;
+            if m.is_infinite() && a.is_finite() && b.is_finite() {
+                die(2002, "곱셈 결과가 너무 커서 표현할 수 없습니다(오버플로우)");
+            }
+            m
+        }
         "/" => {
             if b == 0.0 {
                 die(2001, "0으로 나눌 수 없습니다");
             }
             a / b
         }
-        _ => die(1002, &format!("지원하지 않는 연산자: {} (+, -, *, / 만 가능)", op)),
+        _ => die(
+            1002,
+            &format!("지원하지 않는 연산자: {} (+, -, *, / 만 가능)", op),
+        ),
     };
 
     println!("{}", result);
